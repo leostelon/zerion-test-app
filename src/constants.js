@@ -21,4 +21,4 @@ export const ChainsConfig = {
 	},
 };
 
-export const CHAIN = ChainsConfig.ETH_SEPOLIA;
+export const CHAIN = ChainsConfig.BASE;
