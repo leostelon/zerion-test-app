@@ -1,5 +1,5 @@
 import "./App.css";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	connectWalletToSite,
 	getWalletAddress,
@@ -13,6 +13,7 @@ import { Contracts } from "./constants";
 import Web3 from "web3";
 
 function App() {
+	const isPaused = useRef(true);
 	async function init() {
 		try {
 			await connectWalletToSite();
@@ -46,73 +47,71 @@ function App() {
 			const addressList = await getWalletAddress();
 			const publicKey = addressList[0];
 
-			// Get USDC balance
-			const USDCContract = new window.web3.eth.Contract(
-				ERC20Contract.abi,
-				Contracts.BASE_USDC
-			);
-			// const balance = await USDCContract.methods.balanceOf(publicKey).call();
-			const balance = 1000;
-			console.log(balance);
+			while (!isPaused.current) {
+				// Get USDC balance
+				const USDCContract = new window.web3.eth.Contract(
+					ERC20Contract.abi,
+					Contracts.BASE_USDC
+				);
+				// const balance = await USDCContract.methods.balanceOf(publicKey).call();
+				const balance = 1000;
+				console.log(balance);
 
-			const pricePerEth = await getPricePerWeth();
-			const finalDepositEth = Web3.utils.fromWei(balance, "mwei") / pricePerEth;
-			const finalDepositEthInWei = Web3.utils.toWei(finalDepositEth, "ether");
-			console.log("Total Deposit Value:" + finalDepositEth);
+				const pricePerEth = await getPricePerWeth();
+				const finalDepositEth =
+					Web3.utils.fromWei(balance, "mwei") / pricePerEth;
+				const finalDepositEthInWei = Web3.utils.toWei(finalDepositEth, "ether");
+				console.log("Total Deposit Value:" + finalDepositEth);
 
-			const aerodromeContract = new window.web3.eth.Contract(
-				AerodromeContract.abi,
-				Contracts.AERODROME_ROUTER
-			);
-			// const amountTokenDesired = Web3.utils.toWei("0.02538", "mwei");
-			const amountTokenMin = Web3.utils.toWei("0", "mwei");
-			const deadline = Math.floor(Date.now() / 1000) + 600;
-			const data = aerodromeContract.methods
-				.addLiquidityETH(
-					Contracts.BASE_USDC,
-					false,
-					balance,
-					amountTokenMin,
-					"0",
-					publicKey,
-					deadline
-				)
-				.encodeABI();
-			console.log(`>>> Started Aerodrome Provide Liquidity Transaction <<<`);
+				const aerodromeContract = new window.web3.eth.Contract(
+					AerodromeContract.abi,
+					Contracts.AERODROME_ROUTER
+				);
+				// const amountTokenDesired = Web3.utils.toWei("0.02538", "mwei");
+				const amountTokenMin = Web3.utils.toWei("0", "mwei");
+				const deadline = Math.floor(Date.now() / 1000) + 600;
+				const data = aerodromeContract.methods
+					.addLiquidityETH(
+						Contracts.BASE_USDC,
+						false,
+						balance,
+						amountTokenMin,
+						"0",
+						publicKey,
+						deadline
+					)
+					.encodeABI();
+				console.log(`>>> Started Aerodrome Provide Liquidity Transaction <<<`);
 
-			// Gas calculation
-			const gasPrice = await window.web3.eth.getGasPrice();
-			const gas = await window.web3.eth.estimateGas({
-				to: Contracts.AERODROME_ROUTER,
-				from: publicKey,
-				data,
-				value: finalDepositEthInWei,
-			});
-			console.log(gas);
+				// Gas calculation
+				const gasPrice = await window.web3.eth.getGasPrice();
+				const gas = await window.web3.eth.estimateGas({
+					to: Contracts.AERODROME_ROUTER,
+					from: publicKey,
+					data,
+					value: finalDepositEthInWei,
+				});
+				console.log(gas);
 
-			const addLiquidityTxObj = {
-				to: Contracts.AERODROME_ROUTER,
-				from: publicKey,
-				data,
-				gas,
-				gasPrice,
-				value: finalDepositEthInWei,
-			};
-			const response = await window.web3.eth.sendTransaction(addLiquidityTxObj);
-			console.log(response);
-
-			// const tx = new Transaction(
-			// 	publicKey,
-			// 	Contracts.AERODROME_ROUTER,
-			// 	data,
-			// 	finalDepositEthInWei,
-			// 	"Aerodrome Provide Liquidity Transaction"
-			// );
-
-			// const txResponse = await tx.sendSignedTransaction();
-			// return txResponse;
+				const addLiquidityTxObj = {
+					to: Contracts.AERODROME_ROUTER,
+					from: publicKey,
+					data,
+					gas,
+					gasPrice,
+					value: finalDepositEthInWei,
+				};
+				const response = await window.web3.eth.sendTransaction(
+					addLiquidityTxObj
+				);
+				console.log(response);
+				addLiquidityETH();
+			}
 		} catch (error) {
 			console.log(error);
+			if (!isPaused.current) {
+				addLiquidityETH();
+			}
 		}
 	}
 
@@ -212,8 +211,7 @@ function App() {
 		}
 	}
 
-  // Approve USDC
-
+	// Approve USDC
 
 	useEffect(() => {
 		// init();
@@ -224,6 +222,23 @@ function App() {
 		<div className="App">
 			<p>working</p>
 			<button onClick={addLiquidityETH}>Transact</button>
+			<button
+				onClick={() => {
+					isPaused.current = false;
+					addLiquidityETH();
+					alert("Transactions has started!");
+				}}
+			>
+				Start
+			</button>
+			<button
+				onClick={() => {
+					isPaused.current = true;
+					alert("Transactions have paused!");
+				}}
+			>
+				Pause
+			</button>
 		</div>
 	);
 }
