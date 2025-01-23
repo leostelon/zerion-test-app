@@ -1,11 +1,26 @@
-import './App.css';
+import "./App.css";
+import { useEffect } from "react";
+import { connectWalletToSite, getWalletAddress } from "./utils/wallet";
 
 function App() {
-  return (
-    <div className="App">
-      <p>working</p>
-    </div>
-  );
+	async function init() {
+		try {
+			await connectWalletToSite();
+			const address = await getWalletAddress();
+			console.log(address);
+		} catch (error) {
+			console.log(error);
+		}
+	}
+	useEffect(() => {
+		init();
+	}, []);
+
+	return (
+		<div className="App">
+			<p>working</p>
+		</div>
+	);
 }
 
 export default App;
