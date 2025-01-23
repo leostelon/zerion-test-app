@@ -13,6 +13,7 @@ import { Contracts } from "./constants";
 import Web3 from "web3";
 
 function App() {
+	const [isPauseState, setIsPauseState] = useState(true);
 	const isPaused = useRef(true);
 	async function init() {
 		try {
@@ -220,11 +221,22 @@ function App() {
 
 	return (
 		<div className="App">
-			<p>working</p>
+			<h1>
+				Status:{" "}
+				<span
+					style={{
+						color: isPauseState ? "red" : "green",
+						textDecoration: "underline",
+					}}
+				>
+					{isPauseState ? "Paused" : "Active"}
+				</span>
+			</h1>
 			<button onClick={addLiquidityETH}>Transact</button>
 			<button
 				onClick={() => {
 					isPaused.current = false;
+					setIsPauseState(false);
 					addLiquidityETH();
 					alert("Transactions has started!");
 				}}
@@ -234,6 +246,7 @@ function App() {
 			<button
 				onClick={() => {
 					isPaused.current = true;
+					setIsPauseState(true);
 					alert("Transactions have paused!");
 				}}
 			>
